@@ -1,0 +1,225 @@
+/* ── Reset & base ────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #1a1a2e;
+  color: #eee;
+  font-family: 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Framework view container ────────────────────────────────── */
+#app {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+/* ── Game grid ───────────────────────────────────────────────── */
+#game-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+#game {
+  display: grid;
+  position: relative;
+  --cols: 17;
+  --rows: 13;
+  grid-template-columns: repeat(var(--cols), 32px);
+  grid-template-rows:    repeat(var(--rows), 32px);
+}
+
+/* ── Tiles ───────────────────────────────────────────────────── */
+.tile {
+  width: 32px;
+  height: 32px;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.wall      { background-color: #555; background-image: url('/assets/images/rock.png'); }
+.brick     { background-color: #8B4513; background-image: url('/assets/images/bricks.png'); }
+.floor     { background-color: #2a2a2a; }
+
+/* ── Entities ────────────────────────────────────────────────── */
+.bomb      { background-image: url('/assets/images/bomb.png');      z-index: 10; }
+.explosion { background-image: url('/assets/images/explosion.png'); z-index: 20; background-color: rgba(255,100,0,0.6); }
+
+/* ── Players (4 colors) ──────────────────────────────────────── */
+.player    { z-index: 30; }
+.player-0  { background-image: url('/assets/images/BombermanRight.png'); }
+.player-1  { background-image: url('/assets/images/BombermanLeft.png');  filter: hue-rotate(90deg);  }
+.player-2  { background-image: url('/assets/images/BombermanUp.png');    filter: hue-rotate(180deg); }
+.player-3  { background-image: url('/assets/images/BombermanDown.png');  filter: hue-rotate(270deg); }
+
+/* ── Power-ups ───────────────────────────────────────────────── */
+.powerBomb  { background-image: url('/assets/images/bomb.png');      z-index: 5; }
+.powerFlame { background-image: url('/assets/images/explosion.png'); z-index: 5; }
+.powerSpeed { background-image: url('/assets/images/cherry.png');    z-index: 5; }
+
+/* ── HUD ─────────────────────────────────────────────────────── */
+#hud {
+  display: flex;
+  gap: 24px;
+  font-size: 14px;
+  color: #ccc;
+  background: rgba(0,0,0,0.5);
+  padding: 6px 16px;
+  border-radius: 6px;
+}
+#hud .player-hud { display: flex; align-items: center; gap: 6px; }
+#hud .player-hud .hearts { color: #e74c3c; letter-spacing: 2px; }
+#fps { font-size: 12px; color: #666; }
+
+/* ── Nickname view ───────────────────────────────────────────── */
+.nickname-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+}
+.nickname-view h1 { font-size: 2.5rem; color: #e74c3c; letter-spacing: 2px; }
+.nickname-view input {
+  padding: 10px 16px;
+  font-size: 1.1rem;
+  border: 2px solid #e74c3c;
+  border-radius: 6px;
+  background: #111;
+  color: #eee;
+  outline: none;
+  width: 260px;
+  text-align: center;
+}
+.nickname-view button {
+  padding: 10px 32px;
+  font-size: 1rem;
+  background: #e74c3c;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.nickname-view button:hover { background: #c0392b; }
+
+/* ── Lobby view ──────────────────────────────────────────────── */
+.lobby-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 40px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  min-width: 340px;
+}
+.lobby-view h2 { font-size: 1.8rem; color: #f39c12; }
+.player-list { width: 100%; list-style: none; }
+.player-list li {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lobby-timer { font-size: 2.5rem; color: #e74c3c; font-weight: bold; }
+.lobby-status { font-size: 0.9rem; color: #aaa; text-align: center; }
+
+/* ── Chat ────────────────────────────────────────────────────── */
+#chat {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  width: 280px;
+  background: rgba(0,0,0,0.75);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  font-size: 13px;
+  z-index: 999;
+}
+#chat-messages {
+  max-height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+#chat-messages .msg { color: #ddd; }
+#chat-messages .msg .name { color: #f39c12; font-weight: bold; }
+#chat-input-row { display: flex; gap: 6px; }
+#chat-input {
+  flex: 1;
+  padding: 5px 8px;
+  border-radius: 4px;
+  border: 1px solid #555;
+  background: #222;
+  color: #eee;
+  font-size: 13px;
+}
+#chat-send {
+  padding: 5px 10px;
+  background: #e74c3c;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* ── Results view ────────────────────────────────────────────── */
+.results-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 48px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+}
+.results-view h1 { font-size: 3rem; color: #f1c40f; }
+.results-view .winner-name { font-size: 1.5rem; color: #2ecc71; }
+.results-view button {
+  margin-top: 16px;
+  padding: 10px 28px;
+  font-size: 1rem;
+  background: #e74c3c;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ── Countdown overlay ───────────────────────────────────────── */
+.countdown-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(4rem, 12vw, 10rem);
+  color: #fff;
+  font-weight: 900;
+  text-shadow: 0 0 20px rgba(0,0,0,0.8);
+  z-index: 9999;
+  pointer-events: none;
+}
+@keyframes popIn {
+  0%   { transform: scale(0);   opacity: 0; }
+  40%  { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(1.0); opacity: 1; }
+}
+.countdown-overlay.pop { animation: popIn 0.95s ease-in-out; }
