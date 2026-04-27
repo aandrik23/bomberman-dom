@@ -28,6 +28,23 @@ type inputMsg struct {
 	DropBomb bool `json:"dropBomb"`
 }
 
+type stateMsg struct {
+	X       int     `json:"x"`
+	Y       int     `json:"y"`
+	PosX    float64 `json:"posX"`
+	PosY    float64 `json:"posY"`
+	TargetX int     `json:"targetX"`
+	TargetY int     `json:"targetY"`
+	Dir     struct {
+		Dx int `json:"dx"`
+		Dy int `json:"dy"`
+	} `json:"dir"`
+	NextDir struct {
+		Dx int `json:"dx"`
+		Dy int `json:"dy"`
+	} `json:"nextDir"`
+}
+
 type chatMsg struct {
 	Nickname string `json:"nickname"`
 	Message  string `json:"message"`
@@ -66,6 +83,25 @@ type relayInputPayload struct {
 		Dy int `json:"dy"`
 	} `json:"dir"`
 	DropBomb bool `json:"dropBomb"`
+}
+
+type relayStatePayload struct {
+	Type        string  `json:"type"`
+	PlayerIndex int     `json:"playerIndex"`
+	X           int     `json:"x"`
+	Y           int     `json:"y"`
+	PosX        float64 `json:"posX"`
+	PosY        float64 `json:"posY"`
+	TargetX     int     `json:"targetX"`
+	TargetY     int     `json:"targetY"`
+	Dir         struct {
+		Dx int `json:"dx"`
+		Dy int `json:"dy"`
+	} `json:"dir"`
+	NextDir struct {
+		Dx int `json:"dx"`
+		Dy int `json:"dy"`
+	} `json:"nextDir"`
 }
 
 type relayChatPayload struct {
@@ -134,7 +170,7 @@ func generateMap() []string {
 				continue
 			}
 			if c == 'B' && !safe[[2]int{x, y}] {
-				if rand.Float64() < 0.33 {
+				if rand.Float64() < 1 {
 					grid[y][x] = powerTypes[rand.Intn(3)]
 				}
 				continue
@@ -302,6 +338,31 @@ func (h *Hub) handleMessage(c *Client, raw []byte) {
 			PlayerIndex: c.playerIndex,
 			Dir:         m.Dir,
 			DropBomb:    m.DropBomb,
+		}
+		h.broadcastExcept(c, payload)
+
+	case "state":
+		h.mu.Lock()
+		phase := h.phase
+		h.mu.Unlock()
+		if phase != "game" {
+			return
+		}
+		var m stateMsg
+		if err := json.Unmarshal(raw, &m); err != nil {
+			return
+		}
+		payload := relayStatePayload{
+			Type:        "state",
+			PlayerIndex: c.playerIndex,
+			X:           m.X,
+			Y:           m.Y,
+			PosX:        m.PosX,
+			PosY:        m.PosY,
+			TargetX:     m.TargetX,
+			TargetY:     m.TargetY,
+			Dir:         m.Dir,
+			NextDir:     m.NextDir,
 		}
 		h.broadcastExcept(c, payload)
 
