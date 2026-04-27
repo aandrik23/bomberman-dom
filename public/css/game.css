@@ -160,7 +160,8 @@ body {
   gap: 4px;
 }
 #chat-messages .msg { color: #ddd; }
-#chat-messages .msg .name { color: #f39c12; font-weight: bold; }
+#chat-messages .msg .name { font-weight: bold; }
+#chat-messages .msg-system { color: #e74c3c; }
 #chat-input-row { display: flex; gap: 6px; }
 #chat-input {
   flex: 1;

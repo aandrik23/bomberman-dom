@@ -51,6 +51,10 @@ export function checkWinner(players) {
   return null;
 }
 
+export function killPlayer(playerIndex) {
+  playerLives[playerIndex] = 0;
+}
+
 export function resetGameState(playerIndices) {
   initPlayerLives(playerIndices);
 }

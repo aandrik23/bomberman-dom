@@ -1,11 +1,11 @@
 // views/game.js — game view
 // Framework renders this view once; the game loop owns the DOM from then on.
 
-import { el, subscribeTo, unsubscribeFrom } from "../../framework/index.js";
+import { el, subscribeTo, unsubscribeFrom, emit } from "../../framework/index.js";
 import { setView } from "../../framework/index.js";
 import { buildMap }        from "../game/buildMap.js";
 import { startGameLoop, stopGameLoop } from "../game/gameLoop.js";
-import { getAllLives, initPlayerLives } from "../game/gameState.js";
+import { getAllLives, initPlayerLives, killPlayer } from "../game/gameState.js";
 import { startMusic, stopMusic } from "../game/audio.js";
 import {
   getMyPlayerIndex,
@@ -27,7 +27,6 @@ export function renderGameView(container) {
     el("div", {}, [fpsEl]),
     gameEl,
   ]));
-  container.appendChild(buildChatUI());
 
   // ── Determine player list from server start message ──────────
   const startData  = getGameStartData();
@@ -41,10 +40,20 @@ export function renderGameView(container) {
         { playerIndex: 1, nickname: "P2" },
       ];
 
+  // Assign a random color to each player's nickname (no red — reserved for system messages)
+  const CHAT_COLORS = ["#00e5ff", "#ffd600", "#e040fb", "#00e60c"]; // cyan, yellow, magenta, green
+  const shuffled = [...CHAT_COLORS].sort(() => Math.random() - 0.5);
+  const nicknameColors = Object.fromEntries(playerDefs.map((p, i) => [p.nickname, shuffled[i]]));
+
+  container.appendChild(buildChatUI(nicknameColors));
+
   // ── Build map, spawn players, init lives ─────────────────────
   const playerObjects = buildMap(gameEl, playerDefs, startData?.map ?? null);
   initPlayerLives(playerDefs.map(p => p.playerIndex));
   renderHUD(hudEl);
+
+  // Nickname lookup by playerIndex
+  const nicknames = Object.fromEntries(playerDefs.map(p => [p.playerIndex, p.nickname]));
 
   // ── Local player controls ────────────────────────────────────
   const localPlayer = playerObjects.find(p => p.playerIndex === myIndex)
@@ -106,6 +115,26 @@ export function renderGameView(container) {
   function onHudUpdate() { renderHUD(hudEl); }
   subscribeTo("hud:update", onHudUpdate);
 
+  // ── Player died (explosion) ───────────────────────────────────
+  function onPlayerDied(playerIndex) {
+    const name = nicknames[playerIndex] ?? `P${playerIndex + 1}`;
+    emit("chat:system", `💀 ${name} was eliminated!`);
+  }
+  subscribeTo("game:playerDied", onPlayerDied);
+
+  // ── Player disconnected ───────────────────────────────────────
+  function onPlayerLeft({ playerIndex, nickname }) {
+    const p = playerObjects.find(p => p.playerIndex === playerIndex);
+    if (p && p.alive) {
+      p.alive = false;
+      p.el.remove();
+      killPlayer(playerIndex);
+      renderHUD(hudEl);
+    }
+    emit("chat:system", `🔌 ${nickname} disconnected and was eliminated.`);
+  }
+  subscribeTo("game:playerLeft", onPlayerLeft);
+
   // ── Game over ─────────────────────────────────────────────────
   function onGameOver(winner) {
     stopMusic();
@@ -130,9 +159,11 @@ export function renderGameView(container) {
     stopMusic();
     document.removeEventListener("keydown", onKeyDown);
     document.removeEventListener("keyup",   onKeyUp);
-    unsubscribeFrom("game:remoteInput", onRemoteInput);
-    unsubscribeFrom("hud:update",       onHudUpdate);
-    unsubscribeFrom("game:over",        onGameOver);
+    unsubscribeFrom("game:remoteInput",  onRemoteInput);
+    unsubscribeFrom("hud:update",        onHudUpdate);
+    unsubscribeFrom("game:playerDied",   onPlayerDied);
+    unsubscribeFrom("game:playerLeft",   onPlayerLeft);
+    unsubscribeFrom("game:over",         onGameOver);
   }
 
   return cleanup; // framework calls this when navigating away
@@ -153,7 +184,7 @@ function renderHUD(hudEl) {
 }
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
-function buildChatUI() {
+function buildChatUI(nicknameColors) {
   const messagesEl = el("div", { id: "chat-messages" });
   const inputEl    = el("input", {
     id: "chat-input",
@@ -177,12 +208,16 @@ function buildChatUI() {
   });
 
   subscribeTo("chat:message", ({ nickname, message }) => {
+    const nameEl = el("span", { class: "name", text: `${nickname}: ` });
+    nameEl.style.color = nicknameColors[nickname];
     messagesEl.appendChild(
-      el("div", { class: "msg" }, [
-        el("span", { class: "name", text: `${nickname}: ` }),
-        el("span", { text: message }),
-      ])
+      el("div", { class: "msg" }, [nameEl, el("span", { text: message })])
     );
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  });
+
+  subscribeTo("chat:system", (text) => {
+    messagesEl.appendChild(el("div", { class: "msg msg-system", text }));
     messagesEl.scrollTop = messagesEl.scrollHeight;
   });
 

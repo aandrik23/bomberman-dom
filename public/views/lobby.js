@@ -1,13 +1,11 @@
 // views/lobby.js — waiting room: player list + countdown timers
-// Listens to ws:lobby:update events from the WebSocket client.
 
-import { el, subscribe, unsubscribe, emit } from "../../framework/index.js";
-import { setView } from "../../framework/index.js";
-import { subscribeTo, unsubscribeFrom } from "../../framework/index.js";
+import { el, setView, subscribeTo, unsubscribeFrom } from "../../framework/index.js";
 
 export function renderLobbyView(container) {
   let players   = [];
-  let countdown = null; // seconds remaining, or null
+  let countdown = null;
+  let phase     = ""; // "waiting" | "ready" | ""
 
   const playerListEl  = el("ul",  { class: "player-list" });
   const countdownEl   = el("div", { class: "lobby-timer",  text: "" });
@@ -25,16 +23,23 @@ export function renderLobbyView(container) {
   function onLobbyUpdate(msg) {
     players   = msg.players  ?? players;
     countdown = msg.countdown ?? null;
+    phase     = msg.phase    ?? "";
 
     renderList();
 
-    if (countdown !== null) {
-      countdownEl.textContent = countdown > 0 ? `Starting in ${countdown}s` : "GO!";
-      statusEl.textContent    = players.length >= 4
-        ? "4 players ready!"
-        : `${players.length}/4 players — starting soon`;
+    if (countdown !== null && phase === "waiting") {
+      countdownEl.textContent = countdown > 0
+        ? `Waiting ${countdown}s for more players…`
+        : "Checking for players…";
+      countdownEl.style.color = "#f39c12";
+      statusEl.textContent    = `${players.length}/4 players — timer resets if someone joins or leaves`;
+    } else if (countdown !== null && phase === "ready") {
+      countdownEl.textContent = countdown > 0 ? `Game starts in ${countdown}s` : "GO!";
+      countdownEl.style.color = "#e74c3c";
+      statusEl.textContent    = "Lobby locked — get ready!";
     } else {
       countdownEl.textContent = "";
+      countdownEl.style.color = "";
       statusEl.textContent    = `${players.length}/4 players — waiting…`;
     }
   }

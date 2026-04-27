@@ -67,6 +67,10 @@ function onMessage(msg) {
       emit("chat:message", msg);
       break;
 
+    case "playerLeft":
+      emit("game:playerLeft", { playerIndex: msg.playerIndex, nickname: msg.nickname });
+      break;
+
     case "gameOver":
       emit("game:over", msg.winner);
       break;
