@@ -27,11 +27,11 @@ var clientIDCounter atomic.Uint64
 
 func main() {
 	addr := flag.String("addr", ":8080", "address to listen on")
-	dir  := flag.String("dir", "../public", "static files directory")
-	dev  := flag.Bool("dev", false, "disable caching for local dev")
+	dev := flag.Bool("dev", false, "disable caching for local dev")
 	flag.Parse()
 
-	if _, err := os.Stat(*dir); err != nil {
+	const dir = "../public"
+	if _, err := os.Stat(dir); err != nil {
 		log.Fatalf("static dir: %v", err)
 	}
 
@@ -54,7 +54,7 @@ func main() {
 	})
 
 	// ── Static files ────────────────────────────────────────────
-	fs := http.FileServer(http.Dir(*dir))
+	fs := http.FileServer(http.Dir(dir))
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		if *dev {
@@ -75,7 +75,7 @@ func main() {
 	}
 
 	figlet.NewFigure("BOMBERMAN", "small", false).Print()
-	fmt.Printf("\nServing %s  →  http://%s\n\n", absPath(*dir), ln.Addr())
+	fmt.Printf("\nServing %s  →  http://%s\n\n", absPath(dir), ln.Addr())
 
 	// ── Graceful shutdown ───────────────────────────────────────
 	idle := make(chan struct{})

@@ -170,7 +170,7 @@ func generateMap() []string {
 				continue
 			}
 			if c == 'B' && !safe[[2]int{x, y}] {
-				if rand.Float64() < 1 {
+				if rand.Float64() < 0.5 {
 					grid[y][x] = powerTypes[rand.Intn(3)]
 				}
 				continue
